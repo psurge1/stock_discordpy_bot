@@ -12,7 +12,7 @@ class csv_tools:
             return self.file_path
 
     def set_read_return_type(self, r_type):
-        if r_type in ['ARRAY','STRING','DICTIONARY']:
+        if r_type in ['ARRAY','STRING','DICTIONARY', 'DICTARRAY', 'DICTDICT']:
             self.read_return_type = r_type
         else:
             print("ERROR: return type not supported")
@@ -24,7 +24,16 @@ class csv_tools:
             return
         
         with open(rp, 'r') as csvfile:
-            return csvfile.read()
+            csvreader=csv.reader(csvfile)
+            if self.read_return_type == 'DICTARRAY':
+                return list(csv.DictReader(csvfile))
+            elif self.read_return_type == 'DICTDICT':
+                dict_headers=next(csvreader)
+                dataset_dict={}
+                for row in csvreader:
+                    dataset_dict[row[0]]={dict_headers[i]:row[i] for i in range(1, len(dict_headers))}
+                return dataset_dict
+            return list(csv.reader(csvfile))
     
     def write(self, w_path=None):
         wp = self.__check__(w_path)
