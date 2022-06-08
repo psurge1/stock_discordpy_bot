@@ -1,5 +1,5 @@
-from tkinter import font
 import discord
+import fmpsdk
 from discord.ext import commands, tasks
 
 from matplotlib import pyplot as plt
@@ -7,6 +7,9 @@ import time
 
 from utils import file_manager, data_cleaner
 from utils.file_tools import csv_tools as csv_manipulator, txt_tools as txt_manipulator
+
+csv_tool=csv_manipulator()
+txt_tool=txt_manipulator()
 
 prefix="$"
 
@@ -22,12 +25,13 @@ list_value=3
 pfp1=open("img/stock1.png", 'rb').read()
 pfp2=open("img/stock2.png", 'rb').read()
 
-csv_tool=csv_manipulator()
-txt_tool=txt_manipulator()
-
 csv_tool.set_read_return_type('DICTDICT')
 dataset=csv_tool.read(r"data\nasdaq_screener_1640713211469.csv")
 # print(data_cleaner.list_dict_cleaner(dataset))
+
+apikey = txt_tool.read("./key.txt")
+
+credit = "Stock data provided by nasdaq.com and FmpCloud"
 
 @client.event
 async def on_ready():
@@ -91,10 +95,19 @@ async def check(ctx, a, b=''):
                 colour=discord.Colour.green()
             )
             detail_embed.add_field(name=a, value=dataset[b][a])
-            detail_embed.set_footer(text="Stock data provided by nasdaq.com")
+            detail_embed.set_footer(text=credit)
 
             await ctx.send(embed=detail_embed)
+        elif a == 'Price':
+            detail_embed=discord.Embed(
+                title=b,
+                colour=discord.Colour.green()
+            )
+            symbol: str = b
+            detail_embed.add_field(name=a, value=f"${fmpsdk.company_profile(apikey=apikey, symbol=symbol)[0]['price']} USD")
+            detail_embed.set_footer(text=credit)
 
+            await ctx.send(embed=detail_embed)
         else:
             await ctx.send(embed=discord.Embed(
                 description="Detail not found",
@@ -107,7 +120,7 @@ async def check(ctx, a, b=''):
             description=dataset[a]['Name'],
             colour=discord.Colour.green()
         )
-        stock_embed.set_footer(text=f"Stock data provided by nasdaq.com")
+        stock_embed.set_footer(text=credit)
 
         n=1
         for k in dataset[a]:
@@ -145,10 +158,18 @@ async def code(ctx, *, arg):
     while True:
         if w==len(arg) or arg[w]==prefix:
             break
+        elif arg[w] == '?' and arg[w+2] == '?':
+            p = arg[w+1]
+            if p == 't':
+                raw_code+='    '
+            elif p == 's':
+                raw_code+=' '
+            w+=3
         raw_code+=arg[w]
         w+=1
-    a = arg.split("\n")
-    await ctx.send(raw_code)
+
+    exec(raw_code)
+    await ctx.send(f"```py\n{raw_code}\n```")
 
 # @client.command()
 # async def run_script(ctx):
@@ -172,6 +193,8 @@ def graph(stock_label, xtitle=None, ytitle=None):
     dev_y_one=[384, 420, 467, 493, 532, 560, 623, 649, 673, 687, 737]
     dev_x_two=[]
     dev_y_two=[]
+    # dev_x_two=[25,26,27,28,29,30,31,32,33,34,35]
+    # dev_y_two=[747, 687, 673, 649, 623, 560, 532, 493, 467, 420, 384]
     for i in range(len(dev_x_one)):
         dev_x_two.append(dev_x_one[i]+5)
         dev_y_two.append(dev_y_one[i]*2)
