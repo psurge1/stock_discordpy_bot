@@ -1,16 +1,14 @@
-from unicodedata import name
-import discord
-import fmpsdk
+import discord # Discord API
 from discord.ext import commands, tasks
 
-from matplotlib import pyplot as plt
+import fmpsdk # Stock Data API (FmpCloud)
+
+from matplotlib import pyplot as plt # Graphing tool
 import time
 
-from utils import file_manager, data_cleaner
-from utils.file_tools import csv_tools as csv_manipulator, txt_tools as txt_manipulator
+from utils.file_tools import txt_tools as txt_t # txt file reader
 
-csv_tool=csv_manipulator()
-txt_tool=txt_manipulator()
+txt_tool=txt_t()
 
 prefix="$"
 
@@ -18,17 +16,13 @@ client=commands.Bot(command_prefix=prefix)
 
 client.remove_command('help')
 
-r=1
+green_status=True # variable determining bot status (odd or even)
 
 status_list=['Bull', 'Bear']
 list_value=3
 
-pfp1=open("img/stock1.png", 'rb').read()
-pfp2=open("img/stock2.png", 'rb').read()
-
-csv_tool.set_read_return_type('DICTDICT')
-dataset=csv_tool.read(r"data\nasdaq_screener_1640713211469.csv")
-# print(data_cleaner.list_dict_cleaner(dataset))
+# pfp2=open("img/stock2.png", 'rb').read() bot status pfps (currently not in use)
+# pfp1=open("img/stock1.png", 'rb').read() bot status pfps (currently not in use)
 
 apikey = txt_tool.read("./key.txt")
 
@@ -36,6 +30,9 @@ credit = "Stock data provided by FmpCloud"
 
 @client.event
 async def on_ready():
+    """
+    function called when the bot is online
+    """
     await client.change_presence(status=discord.Status.online, activity=discord.Game('Stocks | $help'))
     # update.start()
     print (f"Bot is ready. \nDiscord.py {discord.__version__}")
@@ -43,6 +40,9 @@ async def on_ready():
 
 @client.command(pass_context=True)
 async def help(ctx, cmd=""):
+    """
+    custom help command
+    """
     help_embed=discord.Embed(
         title="Help",
         description="Type ``$help [command]`` for more info on a command",
@@ -56,8 +56,11 @@ async def help(ctx, cmd=""):
 
 @tasks.loop(seconds=30)
 async def update():
-    global r, list_value
-    if r%2==0:
+    """
+    updates stock discord bot's activity status (in development)
+    """
+    global green_status, list_value
+    if green_status:
         await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=status_list[list_value%2]))
         # if status_list[list_value%2] == "Bull":
         #     # await client.user.edit(avatar=pfp1)
@@ -67,37 +70,37 @@ async def update():
     else:
         await client.change_presence(status=discord.Status.online, activity=discord.Game('Stocks'))
         # await client.user.edit(avatar=pfp1)
-    r+=2; """change"""
+
+    # green_status = not green_status; # change
 
 @client.command()
 async def clear(ctx, amount=1):
+    """
+    clears images in the channel of the command
+    """
     await ctx.channel.purge(limit=amount+1)
 
 @client.command()
 async def invite(ctx, password):
+    """
+    sends a bot invite link
+    """
     if password == txt_tool.read('./invpass.txt'):
         await ctx.channel.purge(limit=1)
         await ctx.send('https://discord.com/api/oauth2/authorize?client_id=899382333843574845&permissions=2416438352&scope=bot')
 
 @client.command()
 async def greet(ctx):
-    print("DM")
-
-# @client.command()
-# async def testing(ctx):
-#     desc = 'Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide. It also sells various related services. In addition, the company offers iPhone, a line of smartphones; Mac, a line of personal computers; iPad, a line of multi-purpose tablets; AirPods Max, an over-ear wireless headphone; and wearables, home, and accessories comprising AirPods, Apple TV, Apple Watch, Beats products, HomePod, and iPod touch. Further, it provides AppleCare support services; cloud services store services; and operates various platforms, including the App Store that allow customers to discover and download applications and digital content, such as books, music, video, games, and podcasts. Additionally, the company offers various services, such as Apple Arcade, a game subscription service; Apple Music, which offers users a curated listening experience with on-demand radio stations; Apple News+, a subscription news and magazine service; Apple TV+, which offers exclusive original content; Apple Card, a co-branded credit card; and Apple Pay, a cashless payment service, as well as licenses its intellectual property. The company serves consumers, and small and mid-sized businesses; and the education, enterprise, and government markets. It distributes third-party applications for its products through the App Store. The company also twork carriers, wholesalers, retailers, and resellers. Apple Inc. was incorporated in 1977 and is headquartered in Cupertino, California.'
-#     detail_embed=discord.Embed(
-#             title='AAPL',
-#             colour=discord.Colour.green()
-#         )
-#     detail_embed.add_field(name='desc', value=desc)
-#     detail_embed.set_footer(text=credit)
-
-#     await ctx.send(embed=detail_embed)
+    """
+    in development
+    """
+    pass
 
 @client.command()
 async def check(ctx, a, b=''):
-    # embed with graph and data
+    """
+    sends an embed with a given stock's data
+    """
     a = a.upper()
     symbol: str = a
     stock_dict = fmpsdk.company_profile(apikey=apikey, symbol=symbol)[0]
@@ -131,61 +134,19 @@ async def check(ctx, a, b=''):
             if k not in bad_arr:
                 stock_embed.add_field(name=k, value=stock_dict[k], inline=True)
         
-        graph(a)
-        image = discord.File(r"img\graph.png", filename="graph.png")
-        stock_embed.set_image(url="attachment://graph.png")
+        # The following ill be completed once I can access historical stock data
+        # graph(a)
+        # image = discord.File(r"img\graph.png", filename="graph.png")
+        # stock_embed.set_image(url="attachment://graph.png")
         
-        await ctx.send(file=image, embed=stock_embed)
+        # await ctx.send(file=image, embed=stock_embed)
 
-# @client.command
-# async def error(ctx, text):
-#     await ctx.send(embed=discord.Embed(
-#                 description=text,
-#                 colour=discord.Colour.green()
-#             ))
-
-@client.command()
-async def define(ctx, *, arg):
-    return lambda x, y: x * y
-
-@client.command()
-async def code(ctx, *, arg):
-    w=0
-    raw_code=""
-    while True:
-        if w==len(arg) or arg[w]==prefix:
-            break
-        elif arg[w] == '?' and arg[w+2] == '?':
-            p = arg[w+1]
-            if p == 't':
-                raw_code+='    '
-            elif p == 's':
-                raw_code+=' '
-            w+=3
-        raw_code+=arg[w]
-        w+=1
-
-    exec(raw_code)
-    await ctx.send(f"```py\n{raw_code}\n```")
-
-# @client.command()
-# async def run_script(ctx):
-#     await ctx.send("hi")
-
-# @client.command()
-# async def append_app(ctx):
-#     await ctx.send("hi")
-
-# @client.command()
-# async def delete_app(ctx, app_name):
-#     #check if app exists and find its object
-#     if (ctx.message.author.name == app.author): #if ctx author == App author
-#         # show embed to confirm delete
-#         # enter passkey to delete
-#         # delete
-#         print("todo: deleteApp command")
+        await ctx.send(embed=stock_embed)
 
 def graph(stock_label, xtitle=None, ytitle=None):
+    """
+    plots a graph using matplotlib and saves it to img/graph.png
+    """
     dev_x_one=[25,26,27,28,29,30,31,32,33,34,35]
     dev_y_one=[384, 420, 467, 493, 532, 560, 623, 649, 673, 687, 737]
     dev_x_two=[]
@@ -225,5 +186,40 @@ def graph(stock_label, xtitle=None, ytitle=None):
 
     plt.savefig(r"img\graph.png", dpi=100)
     plt.close()
+
+# The following commands are either in development or are ideas for future commands
+# @client.command
+# async def error(ctx, text):
+#     """
+#     displays a universal error message as an embed
+#     """
+#     await ctx.send(embed=discord.Embed(
+#                 description=text,
+#                 colour=discord.Colour.green()
+#             ))
+
+@client.command()
+async def code(ctx, *, arg):
+    """
+    executes and returns python code with syntax highlighting in discord
+    """
+    w=0
+    raw_code=""
+    while True:
+        if w==len(arg) or arg[w]==prefix:
+            break
+        elif arg[w] == '?' and arg[w+2] == '?':
+            p = arg[w+1]
+            if p == 't':
+                raw_code+='    '
+            elif p == 's':
+                raw_code+=' '
+            w+=3
+        else:
+            raw_code+=arg[w]
+            w+=1
+
+    # exec(raw_code)
+    await ctx.send(f"```py\n{raw_code}\n```")
 
 client.run(txt_tool.read('./token.txt'))
