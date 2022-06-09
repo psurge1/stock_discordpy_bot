@@ -3,6 +3,8 @@ from discord.ext import commands, tasks
 
 import fmpsdk # Stock Data API (FmpCloud)
 
+import requests, json
+
 from matplotlib import pyplot as plt # Graphing tool
 import time
 
@@ -122,7 +124,7 @@ async def check(ctx, a, b=''):
                 colour=discord.Colour.green()
             ))
     else:
-        a=a.upper()
+        hist_stock_data = json.loads(requests.get(f"https://fmpcloud.io/api/v3/historical-price-full/{a}?apikey={apikey}").text)
         stock_embed=discord.Embed(
             title=a,
             description=stock_dict['companyName'],
@@ -135,27 +137,40 @@ async def check(ctx, a, b=''):
                 stock_embed.add_field(name=k, value=stock_dict[k], inline=True)
         
         # The following ill be completed once I can access historical stock data
-        # graph(a)
-        # image = discord.File(r"img\graph.png", filename="graph.png")
-        # stock_embed.set_image(url="attachment://graph.png")
-        
-        # await ctx.send(file=image, embed=stock_embed)
+        # open, high, low, close
+        arr_time = []
+        arr_open = []
+        arr_high = []
+        arr_low = []
+        arr_close = []
+        for i in range(len(hist_stock_data['historical'])-1, -1, -1):
+            # print(hist_stock_data['historical'][i])
+            arr_time.append(hist_stock_data['historical'][i]['date'])
+            arr_open.append(hist_stock_data['historical'][i]['open'])
+            arr_high.append(hist_stock_data['historical'][i]['high'])
+            arr_low.append(hist_stock_data['historical'][i]['low'])
+            arr_close.append(hist_stock_data['historical'][i]['close'])
+        graph(a, arr_time, [arr_open, arr_high, arr_low, arr_close])
+        image = discord.File(r"img\graph.png", filename="graph.png")
+        stock_embed.set_image(url="attachment://graph.png")
+            
+        await ctx.send(file=image, embed=stock_embed)
 
-        await ctx.send(embed=stock_embed)
+        # await ctx.send(embed=stock_embed)
 
-def graph(stock_label, xtitle=None, ytitle=None):
+def graph(stock_label, x_arr, y_matrix, xtitle=None, ytitle=None, labels=['open', 'high', 'low', 'close'], colors=['r', 'g', 'b', 'c', 'm', 'y', 'w', 'k']):
     """
     plots a graph using matplotlib and saves it to img/graph.png
     """
-    dev_x_one=[25,26,27,28,29,30,31,32,33,34,35]
-    dev_y_one=[384, 420, 467, 493, 532, 560, 623, 649, 673, 687, 737]
-    dev_x_two=[]
-    dev_y_two=[]
-    # dev_x_two=[25,26,27,28,29,30,31,32,33,34,35]
-    # dev_y_two=[747, 687, 673, 649, 623, 560, 532, 493, 467, 420, 384]
-    for i in range(len(dev_x_one)):
-        dev_x_two.append(dev_x_one[i]+5)
-        dev_y_two.append(dev_y_one[i]*2)
+    # dev_x_one=[25,26,27,28,29,30,31,32,33,34,35]
+    # dev_y_one=[384, 420, 467, 493, 532, 560, 623, 649, 673, 687, 737]
+    # dev_x_two=[]
+    # dev_y_two=[]
+    # # dev_x_two=[25,26,27,28,29,30,31,32,33,34,35]
+    # # dev_y_two=[747, 687, 673, 649, 623, 560, 532, 493, 467, 420, 384]
+    # for i in range(len(dev_x_one)):
+    #     dev_x_two.append(dev_x_one[i]+5)
+    #     dev_y_two.append(dev_y_one[i]*2)
 
     plt.figure(facecolor='None')
     
@@ -165,10 +180,10 @@ def graph(stock_label, xtitle=None, ytitle=None):
 
     fig.patch.set_facecolor('None')
 
-    ax.plot(dev_x_one, dev_y_one, color='b', label='One')
-    ax.plot(dev_x_two, dev_y_two, color='r', label='Two')
+    for i in range(len(y_matrix)):
+        ax.plot(x_arr, y_matrix[i], color=colors[i%len(colors)], label=labels[i%len(labels)])
 
-    # ax.set_title(stock_label, color='white', fontsize=20, fontweight='bold')
+    ax.set_title(stock_label, color='white', fontsize=20, fontweight='bold')
     for a in (xtitle, ytitle):
         if a!=None:
             ax.set_ylabel(a, fontsize=12, fontweight='bold')
