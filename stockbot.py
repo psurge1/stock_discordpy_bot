@@ -1,7 +1,8 @@
 import discord # Discord API
 from discord.ext import commands, tasks
 
-import fmpsdk # Stock Data API (FmpCloud)
+import fmpsdk
+from matplotlib.axis import XAxis # Stock Data API (FmpCloud)
 
 import requests, json
 
@@ -100,6 +101,9 @@ async def greet(ctx):
 
 @client.command()
 async def check(ctx, a, b=''):
+    t_years = 10
+    t_months = 0
+    t_days = 0
     """
     sends an embed with a given stock's data
     """
@@ -111,7 +115,7 @@ async def check(ctx, a, b=''):
     if b != '':
         if b in key_arr and b not in bad_arr:
             detail_embed=discord.Embed(
-                title=b,
+                title=camel_case_to_sentence(b),
                 colour=discord.Colour.green()
             )
             detail_embed.add_field(name=a, value=stock_dict[b])
@@ -124,7 +128,8 @@ async def check(ctx, a, b=''):
                 colour=discord.Colour.green()
             ))
     else:
-        hist_stock_data = json.loads(requests.get(f"https://fmpcloud.io/api/v3/historical-price-full/{a}?apikey={apikey}").text)
+        t_total_days = int(356.25*t_years+30.437*t_months+t_days)
+        hist_stock_data = json.loads(requests.get(f"https://fmpcloud.io/api/v3/historical-price-full/{a}?timeseries={t_total_days}&apikey={apikey}").text)
         stock_embed=discord.Embed(
             title=a,
             description=stock_dict['companyName'],
@@ -134,7 +139,7 @@ async def check(ctx, a, b=''):
 
         for k in key_arr:
             if k not in bad_arr:
-                stock_embed.add_field(name=k, value=stock_dict[k], inline=True)
+                stock_embed.add_field(name=camel_case_to_sentence(k), value=stock_dict[k], inline=True)
         
         # The following ill be completed once I can access historical stock data
         # open, high, low, close
@@ -151,12 +156,16 @@ async def check(ctx, a, b=''):
             arr_low.append(hist_stock_data['historical'][i]['low'])
             arr_close.append(hist_stock_data['historical'][i]['close'])
         graph(a, arr_time, [arr_open, arr_high, arr_low, arr_close])
+        
         image = discord.File(r"img\graph.png", filename="graph.png")
         stock_embed.set_image(url="attachment://graph.png")
-            
-        await ctx.send(file=image, embed=stock_embed)
 
-        # await ctx.send(embed=stock_embed)
+        await ctx.send(file=image, embed=stock_embed)
+            
+        # future improvement: reactions allowing user to change time frame of stock graph
+        # stock_msg = await ctx.send(file=image, embed=stock_embed)
+        # for r_e in ('🆈', '🅈', '🅼', '🄼', '🅳', '🄳'):
+        #     await ctx.add_reaction(stock_msg, r_e)
 
 def graph(stock_label, x_arr, y_matrix, xtitle=None, ytitle=None, labels=['open', 'high', 'low', 'close'], colors=['r', 'g', 'b', 'c', 'm', 'y', 'w', 'k']):
     """
@@ -184,6 +193,7 @@ def graph(stock_label, x_arr, y_matrix, xtitle=None, ytitle=None, labels=['open'
         ax.plot(x_arr, y_matrix[i], color=colors[i%len(colors)], label=labels[i%len(labels)])
 
     ax.set_title(stock_label, color='white', fontsize=20, fontweight='bold')
+    
     for a in (xtitle, ytitle):
         if a!=None:
             ax.set_ylabel(a, fontsize=12, fontweight='bold')
@@ -193,6 +203,7 @@ def graph(stock_label, x_arr, y_matrix, xtitle=None, ytitle=None, labels=['open'
     
     ax.xaxis.label.set_color('white')
     ax.yaxis.label.set_color('white')
+    ax.xaxis.set_ticks([x_arr[0], x_arr[int(len(x_arr)/3)], x_arr[int(len(x_arr)*2/3)], x_arr[-1]])
     ax.tick_params(axis='x', colors='white')
     ax.tick_params(axis='y', colors='white')
     ax.set_facecolor('None')
@@ -212,6 +223,15 @@ def graph(stock_label, x_arr, y_matrix, xtitle=None, ytitle=None, labels=['open'
 #                 description=text,
 #                 colour=discord.Colour.green()
 #             ))
+
+def camel_case_to_sentence(s):
+    r = ""
+    r += s[0].upper()
+    for i in range(1, len(s)):
+        if s[i].isupper():
+            r += " "
+        r += s[i]
+    return r
 
 @client.command()
 async def code(ctx, *, arg):
