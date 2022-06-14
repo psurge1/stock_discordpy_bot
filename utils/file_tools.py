@@ -1,23 +1,23 @@
 import csv
 
 class csv_tools:
-    def __init__(self, default_file_path=None):
+    def __init__(self, default_file_path:str=None):
         self.file_path = default_file_path
         self.read_return_type = 'ARRAY'
 
-    def __check__(self, path1):
+    def __check__(self, path1:str):
         if path1 != None:
             return path1
         elif self.file_path != None:
             return self.file_path
 
-    def set_read_return_type(self, r_type):
+    def set_read_return_type(self, r_type:str):
         if r_type in ['ARRAY','STRING','DICTIONARY', 'DICTARRAY', 'DICTDICT']:
             self.read_return_type = r_type
         else:
             print("ERROR: return type not supported")
 
-    def read(self, f_path=None):
+    def read(self, f_path:str=None) -> list:
         rp = self.__check__(f_path)
         if rp == None:
             print("ERROR: no path provided")
@@ -35,7 +35,7 @@ class csv_tools:
                 return dataset_dict
             return list(csv.reader(csvfile))
     
-    def write(self, w_path=None):
+    def write(self, w_path:str=None):
         wp = self.__check__(w_path)
         if wp == None:
             print("ERROR: no path provided")
@@ -43,16 +43,16 @@ class csv_tools:
         print("TODO: write()")
 
 class txt_tools:
-    def __init__(self, default_file_path=None):
+    def __init__(self, default_file_path:str=None):
         self.file_path = default_file_path
 
-    def __check__(self, path1):
+    def __check__(self, path1:str) -> str:
         if path1 != None:
             return path1
         elif self.file_path != None:
             return self.file_path
     
-    def read(self, f_path=None):
+    def read(self, f_path:str=None) -> str:
         rp = self.__check__(f_path)
         if rp == None:
             print("ERROR: no path provided")

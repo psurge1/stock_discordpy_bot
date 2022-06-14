@@ -1,33 +1,33 @@
 import discord # Discord API
 from discord.ext import commands, tasks
 
-import fmpsdk
-from matplotlib.axis import XAxis # Stock Data API (FmpCloud)
+import fmpsdk # Stock Data API (FmpCloud)
 
 import requests, json
 
 from matplotlib import pyplot as plt # Graphing tool
+import numpy as np
 import time
 
 from utils.file_tools import txt_tools as txt_t # txt file reader
 
 txt_tool=txt_t()
 
-prefix="$"
+prefix='$'
 
 client=commands.Bot(command_prefix=prefix)
 
-client.remove_command('help')
+client.remove_command("help")
 
 green_status=True # variable determining bot status (odd or even)
 
-status_list=['Bull', 'Bear']
+status_list=["Bull", "Bear"]
 list_value=3
 
 # pfp2=open("img/stock2.png", 'rb').read() bot status pfps (currently not in use)
 # pfp1=open("img/stock1.png", 'rb').read() bot status pfps (currently not in use)
 
-apikey = txt_tool.read("./key.txt")
+apikey = txt_tool.read(txt_tool.read(r".\key.txt").split(sep='\n')[0])
 
 credit = "Stock data provided by FmpCloud"
 
@@ -36,7 +36,7 @@ async def on_ready():
     """
     function called when the bot is online
     """
-    await client.change_presence(status=discord.Status.online, activity=discord.Game('Stocks | $help'))
+    await client.change_presence(status=discord.Status.online, activity=discord.Game("Stocks | $help"))
     # update.start()
     print (f"Bot is ready. \nDiscord.py {discord.__version__}")
     print (time.strftime("%H:%M:%S", time.localtime()))
@@ -88,7 +88,7 @@ async def invite(ctx, password):
     """
     sends a bot invite link
     """
-    if password == txt_tool.read('./invpass.txt'):
+    if password == txt_tool.read(r".\invpass.txt"):
         await ctx.channel.purge(limit=1)
         await ctx.send('https://discord.com/api/oauth2/authorize?client_id=899382333843574845&permissions=2416438352&scope=bot')
 
@@ -211,6 +211,13 @@ def graph(stock_label, x_arr, y_matrix, xtitle=None, ytitle=None, labels=['open'
     ax.legend()
 
     plt.savefig(r"img\graph.png", dpi=100)
+
+    mm = np.poly1d(x_arr, y_matrix[3], 3)
+    # m_line = np.linspace(1, 22, 100)
+
+    plt.plot(mm(x_arr))
+
+    plt.savefig(r"img\simplification.png", dpi=100)
     plt.close()
 
 # The following commands are either in development or are ideas for future commands
@@ -257,4 +264,4 @@ async def code(ctx, *, arg):
     # exec(raw_code)
     await ctx.send(f"```py\n{raw_code}\n```")
 
-client.run(txt_tool.read('./token.txt'))
+client.run(txt_tool.read(r".\token.txt"))
